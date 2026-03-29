@@ -89,5 +89,6 @@ The app opens at `http://localhost:8501`.
 - **yfinance** -- market data
 - **Plotly** -- interactive charts
 - **scikit-learn** -- feature standardization
-
+   ## Notes
 - Made within 1 day where I had too much time on my hands.
+- Intro project, follow my GitHub for more projects like this!
