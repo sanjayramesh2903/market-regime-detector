@@ -1,5 +1,7 @@
 """Market Regime Detector -- Streamlit entry point."""
 
+import time
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -77,12 +79,47 @@ with st.sidebar.expander("About"):
 
 
 # -- Analysis pipeline with progress tracking
+_dot_cycle = [".  ", ".. ", "..."]
+_dot_index = 0
+
+
+_step_descriptions = {
+    "Fetching price data": "Downloading historical OHLCV data from Yahoo Finance",
+    "Engineering features": "Computing log returns, rolling volatility, and momentum spread",
+    "Fitting Hidden Markov Model": "Training a Gaussian HMM with full covariance across multiple random seeds",
+    "Decoding state sequence": "Running the Viterbi algorithm to find the most likely regime path",
+    "Labeling regimes": "Classifying each hidden state as bull, bear, or volatile based on return statistics",
+    "Building dashboard": "Generating charts and computing transition probabilities",
+}
+
+
+def _step(progress, caption, pct, pause=0.0):
+    """Update progress bar and animate dots in the caption area."""
+    global _dot_index
+    desc = _step_descriptions.get(caption, "")
+    caption_area.markdown(
+        f'<div style="font-family:JetBrains Mono,Consolas,monospace; text-align:center; padding:16px 0">'
+        f'<div style="font-size:18px; color:#ffffff">{caption}{_dot_cycle[_dot_index]}</div>'
+        f'<div style="font-size:12px; color:#999999; margin-top:8px">{desc}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+    _dot_index = (_dot_index + 1) % 3
+    progress.progress(pct)
+    if pause:
+        time.sleep(pause)
+
+
 def run_analysis_with_progress(ticker: str, n_states: int, period: str) -> dict:
     """Full pipeline with progress bar updates."""
-    progress = st.progress(0, text="Fetching price data...")
+    global _dot_index
+    _dot_index = 0
+
+    progress = st.progress(0)
+    _step(progress, "Fetching price data", 0, 0.3)
 
     df = fetch_ohlcv(ticker, period)
-    progress.progress(20, text="Engineering features...")
+    _step(progress, "Engineering features", 20, 0.2)
 
     features_df, scaler = compute_features(df)
     aligned_prices = df["Close"].squeeze().loc[features_df.index]
@@ -90,18 +127,40 @@ def run_analysis_with_progress(ticker: str, n_states: int, period: str) -> dict:
     common_idx = raw_returns.index
     features_df = features_df.loc[common_idx]
     aligned_prices = aligned_prices.loc[common_idx]
-    progress.progress(35, text="Fitting Hidden Markov Model...")
+    _step(progress, "Fitting Hidden Markov Model", 35, 0.3)
 
     feat_array = features_df.values
-    model = fit_hmm(feat_array, n_states)
-    progress.progress(75, text="Decoding state sequence...")
+    # Animate dots during HMM fitting (the slow part)
+    import threading
+    fit_result = [None]
+    fit_error = [None]
 
+    def _fit():
+        try:
+            fit_result[0] = fit_hmm(feat_array, n_states)
+        except Exception as e:
+            fit_error[0] = e
+
+    t = threading.Thread(target=_fit)
+    t.start()
+    pct = 35
+    while t.is_alive():
+        pct = min(pct + 2, 72)
+        _step(progress, "Fitting Hidden Markov Model", pct, 0.4)
+    t.join()
+
+    if fit_error[0]:
+        raise fit_error[0]
+    model = fit_result[0]
+
+    _step(progress, "Decoding state sequence", 75, 0.2)
     state_seq = decode_states(model, feat_array)
-    progress.progress(85, text="Labeling regimes...")
 
+    _step(progress, "Labeling regimes", 85, 0.2)
     state_stats = label_states(model, raw_returns, state_seq, n_states)
     trans_matrix = compute_transition_matrix(model)
-    progress.progress(95, text="Building dashboard...")
+
+    _step(progress, "Building dashboard", 95, 0.2)
 
     current_state = int(state_seq[-1])
     current_label = state_stats[current_state]["label"]
@@ -114,8 +173,15 @@ def run_analysis_with_progress(ticker: str, n_states: int, period: str) -> dict:
     streak_start = common_idx[-streak]
     dates_list = [d.strftime("%Y-%m-%d") for d in common_idx]
 
-    progress.progress(100, text="Done.")
+    progress.progress(100)
+    caption_area.markdown(
+        '<div style="font-size:18px; color:#00d26a; font-family:JetBrains Mono,Consolas,monospace; '
+        'text-align:center; padding:16px 0">Done</div>',
+        unsafe_allow_html=True,
+    )
+    time.sleep(0.4)
     progress.empty()
+    caption_area.empty()
 
     return {
         "ticker": ticker,
@@ -141,6 +207,8 @@ def run_analysis_with_progress(ticker: str, n_states: int, period: str) -> dict:
 
 
 # -- Main area
+caption_area = st.empty()
+
 if analyze:
     try:
         result = run_analysis_with_progress(ticker, n_states, period)
