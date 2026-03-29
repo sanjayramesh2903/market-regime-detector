@@ -23,6 +23,15 @@ from plots import (
 )
 from utils import REGIME_COLORS
 
+
+def _info_box(text: str) -> str:
+    """Render a styled info box HTML string."""
+    return (
+        f'<div style="border-left:3px solid #ff8c00; padding:12px 14px; margin:8px 0; '
+        f'background:#0a0a0a; font-family:JetBrains Mono,Consolas,monospace; '
+        f'font-size:12px; color:#cccccc; line-height:1.7; border-radius:2px">{text}</div>'
+    )
+
 # -- Page config
 st.set_page_config(
     page_title="Market Regime Detector",
@@ -273,26 +282,68 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# -- Build dynamic info text
+tk = result["ticker"]
+ss = result["state_stats"]
+n = result["n_states"]
+bull_s = [s for s in ss.values() if s["label"] == "bull"][0]
+bear_s = [s for s in ss.values() if s["label"] == "bear"][0]
+bull_pct = f"{bull_s['pct_time']:.0%}"
+bear_pct = f"{bear_s['pct_time']:.0%}"
+bull_ret = f"{bull_s['mean_return_annualized']:+.1%}"
+bear_ret = f"{bear_s['mean_return_annualized']:+.1%}"
+bull_vol = f"{bull_s['volatility_annualized']:.1%}"
+bear_vol = f"{bear_s['volatility_annualized']:.1%}"
+
+trans = result["transition_matrix"]
+# Find bull and bear indices
+bull_idx = [i for i, s in ss.items() if s["label"] == "bull"][0]
+bear_idx = [i for i, s in ss.items() if s["label"] == "bear"][0]
+bull_persist = f"{trans[bull_idx][bull_idx]:.0%}"
+bear_persist = f"{trans[bear_idx][bear_idx]:.0%}"
+
 # -- Panel 2: Price chart + Regime stats
 col1, col2 = st.columns([3, 1])
 
 with col1:
     st.plotly_chart(make_price_chart(result), use_container_width=True)
+    st.markdown(_info_box(
+        f"{tk} spent {bull_pct} of the period in a bull regime (annualized return {bull_ret}) "
+        f"and {bear_pct} in a bear regime ({bear_ret}). "
+        f"The colored bands show which regime the model assigned to each trading day. "
+        f"Use the 6M/1Y/2Y/ALL buttons to zoom into specific periods."
+    ), unsafe_allow_html=True)
 
 with col2:
     st.markdown(make_regime_stats_html(result), unsafe_allow_html=True)
 
 # -- Panel 3: Regime timeline
 st.plotly_chart(make_regime_timeline(result), use_container_width=True)
+st.markdown(_info_box(
+    f"Each color represents the regime the HMM detected on that day. "
+    f"Long unbroken stretches mean the model is confident in a sustained regime. "
+    f"Frequent color changes suggest {tk} was cycling between states rapidly."
+), unsafe_allow_html=True)
 
 # -- Panel 4: Transition matrix + Feature charts
 col3, col4 = st.columns([1, 2])
 
 with col3:
     st.plotly_chart(make_transition_heatmap(result), use_container_width=True)
+    st.markdown(_info_box(
+        f"The probability of {tk} staying in a bull regime day-to-day is {bull_persist}, "
+        f"and {bear_persist} for bear. Higher diagonal values mean regimes tend to persist "
+        f"rather than flip. Off-diagonal values show how likely a regime switch is on any given day."
+    ), unsafe_allow_html=True)
 
 with col4:
     st.plotly_chart(make_feature_charts(result), use_container_width=True)
+    st.markdown(_info_box(
+        f"These are the three features the HMM uses to classify {tk} into regimes. "
+        f"Log returns capture daily price moves. Rolling volatility (21-day) measures "
+        f"how turbulent the market has been recently. Momentum spread (5d vs 21d average) "
+        f"shows whether short-term trend is above or below the longer-term trend."
+    ), unsafe_allow_html=True)
 
 # -- Footer
 st.markdown("""
