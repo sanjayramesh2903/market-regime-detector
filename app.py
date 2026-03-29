@@ -68,6 +68,11 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .block-container { padding-top: 1.5rem; }
+
+    /* Space out all elements */
+    .stPlotlyChart { margin-bottom: 8px; }
+    h1, h2, h3 { margin-top: 1.5rem !important; }
+    [data-testid="column"] { padding: 0 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -254,6 +259,22 @@ if result is None:
             Enter a ticker in the sidebar and click Analyze to begin.
         </div>
     </div>
+    <div style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px 30px 20px;
+        font-family: 'JetBrains Mono', Consolas, monospace;
+    ">
+        <div style="font-size: 14px; color: #cccccc">
+            Made by <a href="https://github.com/sanjayramesh2903" target="_blank"
+                style="color: #ff8c00; text-decoration: none">Sanjay Krishnan</a>
+        </div>
+        <div style="font-size: 14px">
+            <a href="https://github.com/sanjayramesh2903" target="_blank"
+                style="color: #ff8c00; text-decoration: none">Follow on GitHub for more projects!</a>
+        </div>
+    </div>
     """, unsafe_allow_html=True)
     st.stop()
 
@@ -302,6 +323,8 @@ bear_idx = [i for i, s in ss.items() if s["label"] == "bear"][0]
 bull_persist = f"{trans[bull_idx][bull_idx]:.0%}"
 bear_persist = f"{trans[bear_idx][bear_idx]:.0%}"
 
+st.markdown('<div style="margin-bottom:24px"></div>', unsafe_allow_html=True)
+
 # -- Panel 2: Price chart + Regime stats
 col1, col2 = st.columns([3, 1])
 
@@ -317,6 +340,8 @@ with col1:
 with col2:
     st.markdown(make_regime_stats_html(result), unsafe_allow_html=True)
 
+st.markdown('<div style="margin-bottom:32px"></div>', unsafe_allow_html=True)
+
 # -- Panel 3: Regime timeline
 st.plotly_chart(make_regime_timeline(result), use_container_width=True)
 st.markdown(_info_box(
@@ -324,6 +349,8 @@ st.markdown(_info_box(
     f"Long unbroken stretches mean the model is confident in a sustained regime. "
     f"Frequent color changes suggest {tk} was cycling between states rapidly."
 ), unsafe_allow_html=True)
+
+st.markdown('<div style="margin-bottom:32px"></div>', unsafe_allow_html=True)
 
 # -- Panel 4: Transition matrix + Feature charts
 col3, col4 = st.columns([1, 2])
@@ -344,6 +371,8 @@ with col4:
         f"how turbulent the market has been recently. Momentum spread (5d vs 21d average) "
         f"shows whether short-term trend is above or below the longer-term trend."
     ), unsafe_allow_html=True)
+
+st.markdown('<div style="margin-bottom:32px"></div>', unsafe_allow_html=True)
 
 # -- Footer
 st.markdown("""
