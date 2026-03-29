@@ -12,7 +12,10 @@ pinned: false
 
 Detect stock market regimes using Hidden Markov Models.
 
-**[Live Demo](#)** *(update after deploy)*
+## Live Demo
+
+https://github.com/user-attachments/assets/2e9edb79-b189-408d-919b-08ad5c208714
+
 
 ## Screenshot
 <img width="1881" height="866" alt="mrd" src="https://github.com/user-attachments/assets/6d1a96f0-ec09-4502-96f5-1c21b6b84a46" />
