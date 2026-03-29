@@ -1,6 +1,5 @@
 ---
 title: Market Regime Detector
-emoji: 📈
 colorFrom: green
 colorTo: blue
 sdk: streamlit
@@ -69,7 +68,7 @@ The transition matrix shows "regime stickiness." Diagonal values (e.g., `A[bull]
 
 ```bash
 # Clone and install
-git clone https://github.com/YOUR_USER/market-regime-detector.git
+git clone https://github.com/sanjayramesh2903/market-regime-detector.git
 cd market-regime-detector
 pip install -r requirements.txt
 
@@ -90,3 +89,5 @@ The app opens at `http://localhost:8501`.
 - **yfinance** -- market data
 - **Plotly** -- interactive charts
 - **scikit-learn** -- feature standardization
+
+- Made within 1 day where I had too much time on my hands.
