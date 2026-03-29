@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/2e9edb79-b189-408d-919b-08ad5c208714
 ## Screenshot
 <img width="1881" height="866" alt="mrd" src="https://github.com/user-attachments/assets/6d1a96f0-ec09-4502-96f5-1c21b6b84a46" />
 
-## The Math
+##Math behind MRD
 
 ### Hidden Markov Model
 
@@ -48,9 +48,7 @@ Given fitted parameters and observed data, Viterbi finds:
 z* = argmax P(z_1:T | x_1:T, theta)
 ```
 
-It's dynamic programming over the trellis -- at each step it tracks the most likely path ending in each state.
-
-### Why HMM over k-means?
+### Why use an HMM over k-means?
 
 k-means assigns each day to a cluster independently. HMM respects temporal dependence: a regime that started yesterday is more likely to continue today than to switch. This is captured by the transition matrix `A`, which k-means has no equivalent of.
 
@@ -82,7 +80,7 @@ The app opens at `http://localhost:8501`.
 
 ## Data Source
 
-[yfinance](https://github.com/ranaroussi/yfinance) -- free, no API key needed. Supports stocks, ETFs, and crypto (e.g., `BTC-USD`).
+[yfinance](https://github.com/ranaroussi/yfinance) -- free, has a variety of data for stocks, ETFs, and crypto (e.g., `BTC-USD`).
 
 ## Tech Stack
 
