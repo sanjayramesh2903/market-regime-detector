@@ -76,43 +76,33 @@ with st.sidebar.expander("About"):
     )
 
 
-# -- Cached analysis function
-@st.cache_data(ttl=3600, show_spinner=False)
-def run_analysis(ticker: str, n_states: int, period: str) -> dict:
-    """
-    Full pipeline: fetch, features, HMM fit, decode, label.
+# -- Analysis pipeline with progress tracking
+def run_analysis_with_progress(ticker: str, n_states: int, period: str) -> dict:
+    """Full pipeline with progress bar updates."""
+    progress = st.progress(0, text="Fetching price data...")
 
-    Returns a result dict consumed by all dashboard panels.
-    """
-    # 1. Fetch data
     df = fetch_ohlcv(ticker, period)
+    progress.progress(20, text="Engineering features...")
 
-    # 2. Engineer features
     features_df, scaler = compute_features(df)
-
-    # 3. Align price/returns to feature dates (trimmed by rolling window)
     aligned_prices = df["Close"].squeeze().loc[features_df.index]
     raw_returns = np.log(aligned_prices / aligned_prices.shift(1)).dropna()
-
-    # Re-align everything to raw_returns index (drops one more row)
     common_idx = raw_returns.index
     features_df = features_df.loc[common_idx]
     aligned_prices = aligned_prices.loc[common_idx]
+    progress.progress(35, text="Fitting Hidden Markov Model...")
 
-    # 4. Fit HMM
     feat_array = features_df.values
     model = fit_hmm(feat_array, n_states)
+    progress.progress(75, text="Decoding state sequence...")
 
-    # 5. Decode states
     state_seq = decode_states(model, feat_array)
+    progress.progress(85, text="Labeling regimes...")
 
-    # 6. Label states
     state_stats = label_states(model, raw_returns, state_seq, n_states)
-
-    # 7. Transition matrix
     trans_matrix = compute_transition_matrix(model)
+    progress.progress(95, text="Building dashboard...")
 
-    # 8. Current regime info
     current_state = int(state_seq[-1])
     current_label = state_stats[current_state]["label"]
     streak = 1
@@ -122,9 +112,10 @@ def run_analysis(ticker: str, n_states: int, period: str) -> dict:
         else:
             break
     streak_start = common_idx[-streak]
-
-    # 9. Build result dict
     dates_list = [d.strftime("%Y-%m-%d") for d in common_idx]
+
+    progress.progress(100, text="Done.")
+    progress.empty()
 
     return {
         "ticker": ticker,
@@ -152,8 +143,7 @@ def run_analysis(ticker: str, n_states: int, period: str) -> dict:
 # -- Main area
 if analyze:
     try:
-        with st.spinner("Fetching data and fitting model..."):
-            result = run_analysis(ticker, n_states, period)
+        result = run_analysis_with_progress(ticker, n_states, period)
         st.session_state["result"] = result
     except (ValueError, RuntimeError) as e:
         st.error(str(e))
@@ -162,10 +152,32 @@ if analyze:
 result = st.session_state.get("result")
 
 if result is None:
-    st.info(
-        "Enter a ticker in the sidebar and click Analyze to get started. "
-        "Try SPY, QQQ, GLD, or BTC-USD."
-    )
+    st.markdown("""
+    <div style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        text-align: center;
+        font-family: 'JetBrains Mono', Consolas, monospace;
+    ">
+        <div style="font-size: 40px; font-weight: 700; color: #ff8c00; letter-spacing: 6px; margin-bottom: 12px">
+            MRD
+        </div>
+        <div style="font-size: 13px; color: #666666; letter-spacing: 2px; margin-bottom: 32px">
+            MARKET REGIME DETECTOR
+        </div>
+        <div style="font-size: 12px; color: #444444; max-width: 480px; line-height: 1.8; margin-bottom: 16px">
+            Identifies bull, bear, and volatile market regimes using
+            Gaussian Hidden Markov Models trained on historical price data.
+            Works with any stock, ETF, or crypto ticker.
+        </div>
+        <div style="font-size: 11px; color: #333333; margin-top: 8px">
+            Enter a ticker in the sidebar and click Analyze to begin.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     st.stop()
 
 # -- Panel 1: Current regime banner
