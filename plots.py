@@ -11,10 +11,10 @@ from utils import REGIME_COLORS
 _DARK = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Consolas, Courier New, monospace", color="#888888", size=11),
+    font=dict(family="Consolas, Courier New, monospace", color="#dddddd", size=11),
 )
 _GRID = "rgba(255,255,255,0.05)"
-_TICK = dict(color="#666666", size=10)
+_TICK = dict(color="#bbbbbb", size=10)
 
 
 def _regime_runs(dates, states, state_stats):
@@ -78,7 +78,7 @@ def make_price_chart(result: dict) -> go.Figure:
     fig.update_layout(
         **_DARK,
         title=dict(text=f"{result['ticker']} / Regime-Colored Price History",
-                   font=dict(color="#cccccc", size=13)),
+                   font=dict(color="#ffffff", size=13)),
         height=520,
         margin=dict(l=10, r=10, t=40, b=50),
         hovermode="x unified",
@@ -94,13 +94,13 @@ def make_price_chart(result: dict) -> go.Figure:
                        ],
                        bgcolor="#111111",
                        activecolor="#ff8c00",
-                       font=dict(color="#aaaaaa", size=10),
+                       font=dict(color="#dddddd", size=10),
                    )),
         legend=dict(
             orientation="h",
             yanchor="top", y=-0.08,
             xanchor="left", x=0,
-            font=dict(color="#999999"),
+            font=dict(color="#dddddd"),
             bgcolor="rgba(0,0,0,0)",
         ),
         hoverlabel=dict(bgcolor="#111111", font_color="#ffffff", font_size=12),
@@ -126,7 +126,7 @@ def make_regime_stats_html(result: dict) -> str:
                       letter-spacing:1px; font-size:13px">
             {label.upper()}
           </div>
-          <table style="width:100%; font-size:12px; color:#888888">
+          <table style="width:100%; font-size:12px; color:#dddddd">
             <tr><td style="padding:3px 0">Ann. return</td>
                 <td style="text-align:right; color:{ret_color}; font-weight:600">{ret:+.1%}</td></tr>
             <tr><td style="padding:3px 0">Volatility</td>
@@ -168,7 +168,7 @@ def make_regime_timeline(result: dict) -> go.Figure:
     ))
     fig.update_layout(
         **_DARK,
-        title=dict(text="Regime Timeline", font=dict(color="#cccccc", size=13)),
+        title=dict(text="Regime Timeline", font=dict(color="#ffffff", size=13)),
         height=90,
         margin=dict(l=10, r=10, t=30, b=20),
         yaxis=dict(showticklabels=False),
@@ -199,14 +199,14 @@ def make_transition_heatmap(result: dict) -> go.Figure:
     ))
     fig.update_layout(
         **_DARK,
-        title=dict(text="Transition Probabilities", font=dict(color="#cccccc", size=13)),
+        title=dict(text="Transition Probabilities", font=dict(color="#ffffff", size=13)),
         height=380,
         margin=dict(l=70, r=10, t=40, b=60),
         xaxis_title="To state",
         yaxis_title="From state",
-        xaxis=dict(tickfont=dict(color="#999999", size=11), title_font=dict(color="#666666")),
-        yaxis=dict(autorange="reversed", tickfont=dict(color="#999999", size=11),
-                   title_font=dict(color="#666666")),
+        xaxis=dict(tickfont=dict(color="#dddddd", size=11), title_font=dict(color="#bbbbbb")),
+        yaxis=dict(autorange="reversed", tickfont=dict(color="#dddddd", size=11),
+                   title_font=dict(color="#bbbbbb")),
         hoverlabel=dict(bgcolor="#111111", font_color="#ffffff", font_size=12),
     )
     return fig
@@ -255,7 +255,7 @@ def make_feature_charts(result: dict) -> go.Figure:
 
     # Style subplot titles
     for ann in fig.layout.annotations:
-        ann.font = dict(size=12, color="#cccccc")
+        ann.font = dict(size=12, color="#ffffff")
 
     # Style all axes
     for i in range(1, 4):

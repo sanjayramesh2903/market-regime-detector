@@ -165,15 +165,15 @@ if result is None:
         <div style="font-size: 40px; font-weight: 700; color: #ff8c00; letter-spacing: 6px; margin-bottom: 12px">
             MRD
         </div>
-        <div style="font-size: 13px; color: #666666; letter-spacing: 2px; margin-bottom: 32px">
+        <div style="font-size: 13px; color: #cccccc; letter-spacing: 2px; margin-bottom: 32px">
             MARKET REGIME DETECTOR
         </div>
-        <div style="font-size: 12px; color: #444444; max-width: 480px; line-height: 1.8; margin-bottom: 16px">
+        <div style="font-size: 12px; color: #bbbbbb; max-width: 480px; line-height: 1.8; margin-bottom: 16px">
             Identifies bull, bear, and volatile market regimes using
             Gaussian Hidden Markov Models trained on historical price data.
             Works with any stock, ETF, or crypto ticker.
         </div>
-        <div style="font-size: 11px; color: #333333; margin-top: 8px">
+        <div style="font-size: 11px; color: #999999; margin-top: 8px">
             Enter a ticker in the sidebar and click Analyze to begin.
         </div>
     </div>
@@ -199,7 +199,7 @@ st.markdown(f"""
   <span style="font-size:22px; font-weight:700; color:{colors['text']}; letter-spacing:2px">
     {label.upper()}
   </span>
-  <span style="font-size:13px; color:#666666; margin-left:12px; font-family:'JetBrains Mono',Consolas,monospace">
+  <span style="font-size:13px; color:#cccccc; margin-left:12px; font-family:'JetBrains Mono',Consolas,monospace">
     Active for {streak} days / Since {start_date} / Log-likelihood: {ll:.1f}
   </span>
 </div>
@@ -232,7 +232,7 @@ st.markdown("""
     text-align: right;
     padding: 20px 10px 10px 0;
     font-size: 11px;
-    color: #444444;
+    color: #999999;
     font-family: 'JetBrains Mono', Consolas, monospace;
 ">Created by Sanjay Krishnan</div>
 """, unsafe_allow_html=True)
