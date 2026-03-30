@@ -13,6 +13,7 @@ from model import (
     decode_states,
     fit_hmm,
     label_states,
+    smooth_states,
 )
 from plots import (
     make_feature_charts,
@@ -82,6 +83,9 @@ st.sidebar.title("Market Regime Detector")
 ticker = st.sidebar.text_input("Ticker", value="SPY", max_chars=10).upper().strip()
 n_states = st.sidebar.radio("Number of states", [2, 3], index=1, horizontal=True)
 period = st.sidebar.selectbox("Lookback period", ["1y", "2y", "5y", "10y"], index=2)
+min_duration = st.sidebar.slider(
+    "Min regime duration (days)", min_value=1, max_value=20, value=5, step=1
+)
 analyze = st.sidebar.button("Analyze", type="primary", use_container_width=True)
 
 with st.sidebar.expander("About"):
@@ -168,23 +172,10 @@ def run_analysis_with_progress(ticker: str, n_states: int, period: str) -> dict:
     model = fit_result[0]
 
     _step(progress, "Decoding state sequence", 75, 0.2)
-    state_seq = decode_states(model, feat_array)
+    raw_states = decode_states(model, feat_array)
 
-    _step(progress, "Labeling regimes", 85, 0.2)
-    state_stats = label_states(model, raw_returns, state_seq, n_states)
-    trans_matrix = compute_transition_matrix(model)
+    _step(progress, "Building dashboard", 90, 0.2)
 
-    _step(progress, "Building dashboard", 95, 0.2)
-
-    current_state = int(state_seq[-1])
-    current_label = state_stats[current_state]["label"]
-    streak = 1
-    for i in range(len(state_seq) - 2, -1, -1):
-        if state_seq[i] == current_state:
-            streak += 1
-        else:
-            break
-    streak_start = common_idx[-streak]
     dates_list = [d.strftime("%Y-%m-%d") for d in common_idx]
 
     progress.progress(100)
@@ -197,26 +188,55 @@ def run_analysis_with_progress(ticker: str, n_states: int, period: str) -> dict:
     progress.empty()
     caption_area.empty()
 
+    # Return raw data; smoothing + labeling happen outside the cache
     return {
         "ticker": ticker,
         "n_states": n_states,
         "dates": dates_list,
         "prices": aligned_prices.tolist(),
-        "states": state_seq.tolist(),
-        "state_labels": {i: state_stats[i]["label"] for i in state_stats},
-        "state_stats": state_stats,
-        "transition_matrix": trans_matrix.tolist(),
+        "raw_states": raw_states.tolist(),
+        "raw_returns": raw_returns.tolist(),
         "features": {
             "dates": dates_list,
             "log_returns": features_df["log_returns"].tolist(),
             "rolling_vol": features_df["rolling_vol"].tolist(),
             "momentum": features_df["momentum"].tolist(),
         },
+        "transition_matrix": model.transmat_.tolist(),
+        "model_log_likelihood": float(model.score(feat_array)),
+    }
+
+
+def apply_smoothing(raw_result: dict, min_dur: int) -> dict:
+    """Apply regime smoothing and labeling on top of cached raw result."""
+    raw_states = np.array(raw_result["raw_states"])
+    raw_returns = pd.Series(raw_result["raw_returns"])
+    n_states = raw_result["n_states"]
+
+    state_seq = smooth_states(raw_states, min_duration=min_dur)
+    state_stats = label_states(None, raw_returns, state_seq, n_states)
+
+    current_state = int(state_seq[-1])
+    current_label = state_stats[current_state]["label"]
+    streak = 1
+    for i in range(len(state_seq) - 2, -1, -1):
+        if state_seq[i] == current_state:
+            streak += 1
+        else:
+            break
+
+    dates = raw_result["dates"]
+    streak_start = dates[-streak]
+
+    return {
+        **raw_result,
+        "states": state_seq.tolist(),
+        "state_labels": {i: state_stats[i]["label"] for i in state_stats},
+        "state_stats": state_stats,
         "current_state": current_state,
         "current_label": current_label,
         "current_streak_days": streak,
-        "streak_start_date": streak_start.strftime("%Y-%m-%d"),
-        "model_log_likelihood": float(model.score(feat_array)),
+        "streak_start_date": streak_start,
     }
 
 
@@ -225,13 +245,14 @@ caption_area = st.empty()
 
 if analyze:
     try:
-        result = run_analysis_with_progress(ticker, n_states, period)
-        st.session_state["result"] = result
+        raw_result = run_analysis_with_progress(ticker, n_states, period)
+        st.session_state["raw_result"] = raw_result
     except (ValueError, RuntimeError) as e:
         st.error(str(e))
-        st.session_state.pop("result", None)
+        st.session_state.pop("raw_result", None)
 
-result = st.session_state.get("result")
+raw_result = st.session_state.get("raw_result")
+result = apply_smoothing(raw_result, min_duration) if raw_result else None
 
 if result is None:
     st.markdown("""

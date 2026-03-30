@@ -217,6 +217,53 @@ def decode_states(model: SimpleGaussianHMM, features: np.ndarray) -> np.ndarray:
     return model.predict(features)
 
 
+def smooth_states(states: np.ndarray, min_duration: int = 5) -> np.ndarray:
+    """
+    Merge short regime runs into neighbors.
+
+    Repeats until no run is shorter than min_duration.
+    """
+    if min_duration <= 1:
+        return states.copy()
+
+    out = states.copy()
+
+    while True:
+        # Run-length encode
+        runs = []
+        start = 0
+        for i in range(1, len(out)):
+            if out[i] != out[start]:
+                runs.append((start, i - start, int(out[start])))
+                start = i
+        runs.append((start, len(out) - start, int(out[start])))
+
+        # Find first short run
+        short_idx = None
+        for idx, (_, length, _) in enumerate(runs):
+            if length < min_duration:
+                short_idx = idx
+                break
+
+        if short_idx is None:
+            break
+
+        # Merge into the longer neighbor
+        s, length, _ = runs[short_idx]
+        if short_idx == 0:
+            merge_val = runs[1][2]
+        elif short_idx == len(runs) - 1:
+            merge_val = runs[-2][2]
+        else:
+            prev_len = runs[short_idx - 1][1]
+            next_len = runs[short_idx + 1][1]
+            merge_val = runs[short_idx - 1][2] if prev_len >= next_len else runs[short_idx + 1][2]
+
+        out[s:s + length] = merge_val
+
+    return out
+
+
 def label_states(
     model: SimpleGaussianHMM,
     raw_returns: pd.Series,
